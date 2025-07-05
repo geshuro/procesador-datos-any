@@ -23,7 +23,7 @@ python src/data_processor.py
 ## 📁 Estructura del Proyecto
 
 ```
-reporte-any/
+procesador-datos-any/
 ├── config.yaml                    # Archivo de configuración principal
 ├── config_sin_filtros.yaml        # Configuración sin filtros (backup)
 ├── README.md                      # Este archivo
@@ -33,6 +33,83 @@ reporte-any/
 └── src/
     └── data_processor.py          # Script principal de procesamiento
 ```
+
+## 📊 Formato del Archivo de Entrada (archivofinal.xlsx)
+
+### Estructura de Columnas Requeridas
+
+El archivo Excel debe contener las siguientes columnas con los nombres exactos:
+
+| Columna | Tipo | Descripción | Ejemplo |
+|---------|------|-------------|---------|
+| `Numero_Documento_Paciente` | Numérico | Número de identificación único del paciente | `12345678` |
+| `Genero` | Texto | Género del paciente (M/F) | `M`, `F` |
+| `Edad_Reg` | Numérico | Edad registrada del paciente | `45` |
+| `Codigo_Item` | Texto | Código médico del item/diagnóstico | `Z019`, `E785`, `99199.22` |
+| `Tipo_Diagnostico` | Texto | Tipo de diagnóstico (D/R) | `D`, `R` |
+| `Valor_Lab` | Texto | Valor de laboratorio | `N`, `A`, `P`, `B` |
+| `Perimetro_Abdominal` | Numérico | Perímetro abdominal en centímetros | `95.5` |
+| `Fecha_Atencion` | Fecha | Fecha de atención del paciente | `2024-01-15` |
+
+### Ejemplo de Datos
+
+```csv
+Numero_Documento_Paciente,Genero,Edad_Reg,Codigo_Item,Tipo_Diagnostico,Valor_Lab,Perimetro_Abdominal,Fecha_Atencion
+12345678,M,45,Z019,D,N,95.5,2024-01-15
+12345678,M,45,E785,D,A,95.5,2024-01-15
+87654321,F,32,Z019,D,N,88.0,2024-01-16
+87654321,F,32,Z006,D,N,88.0,2024-01-16
+11111111,M,28,99199.22,R,A,102.3,2024-01-17
+22222222,F,55,E669,D,P,92.1,2024-01-18
+22222222,F,55,E6691,D,P,92.1,2024-01-18
+33333333,M,67,Z019,D,N,110.5,2024-01-19
+33333333,M,67,99209.04,D,N,110.5,2024-01-19
+```
+
+### Códigos Médicos Comunes
+
+#### Códigos de Valoración Clínica
+- `Z019`: Consulta médica general
+- `Z006`: Consulta de seguimiento
+- `99209.04`: Consulta médica específica
+
+#### Códigos de Factores de Riesgo
+- `E669`: Obesidad
+- `E6691`: Obesidad debida a exceso de calorías
+- `E6692`: Obesidad inducida por medicamentos
+- `E6693`: Obesidad extrema
+- `E6690`: Obesidad debida a exceso de calorías
+- `E65X`: Obesidad localizada
+- `E785`: Trastorno del metabolismo de los lípidos
+
+#### Códigos Específicos
+- `99199.22`: Código específico para filtros especiales
+
+### Valores de Laboratorio
+
+| Valor | Descripción |
+|-------|-------------|
+| `N` | Normal |
+| `A` | Anormal |
+| `P` | Positivo |
+| `B` | Bajo |
+
+### Reglas de Validación
+
+1. **Numero_Documento_Paciente**: Debe ser numérico y no nulo
+2. **Genero**: Solo valores `M` (Masculino) o `F` (Femenino)
+3. **Edad_Reg**: Entre 0 y 120 años
+4. **Tipo_Diagnostico**: Solo valores `D` (Diagnóstico) o `R` (Resultado)
+5. **Fecha_Atencion**: Formato de fecha válido
+6. **Perimetro_Abdominal**: Numérico (puede ser nulo)
+
+### Consideraciones Importantes
+
+- **Un paciente puede tener múltiples registros** con diferentes códigos de item
+- **Los códigos de item pueden repetirse** para el mismo paciente
+- **El perímetro abdominal es opcional** y puede estar vacío
+- **Las fechas deben estar en formato estándar** (YYYY-MM-DD)
+- **El archivo debe estar en formato Excel** (.xlsx o .xls)
 
 ## ⚙️ Configuración
 
