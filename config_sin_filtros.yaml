@@ -1,0 +1,33 @@
+# Configuración para el procesador de datos médicos - SIN FILTROS ESPECÍFICOS
+# Archivo de configuración YAML de ejemplo
+
+# Códigos de item médicos a filtrar (vacío = considerar todos)
+codigos_item: []
+# Si está vacío, se considerarán todos los códigos disponibles
+
+# Valores de laboratorio a filtrar (vacío = considerar todos)
+valores_laboratorio: []
+# Si está vacío, se considerarán todos los valores disponibles
+
+# Configuración adicional
+configuracion:
+  tipo_diagnostico: "D"
+  archivo_entrada: "files/archivofinal.xlsx"
+  archivo_salida: "files/final_sin_filtros.csv"
+  
+# Columnas a mantener en el dataset final
+columnas:
+  - Numero_Documento_Paciente
+  - Genero
+  - Edad_Reg
+  - Codigo_Item
+  - Tipo_Diagnostico
+  - Valor_Lab
+  - Perimetro_Abdominal
+  - Fecha_Atencion
+
+# Reglas de validación
+validaciones:
+  edad_minima: 0
+  edad_maxima: 120
+  generos_validos: ["M", "F"] 
