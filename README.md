@@ -232,6 +232,7 @@ filtro_valoracion_clinica:
 - `Valor_Lab`
 - `Perimetro_Abdominal`
 - `Fecha_Atencion`
+- `Nombre_Establecimiento`
 
 ## 📋 Archivo de Configuración YAML
 

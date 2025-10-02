@@ -521,10 +521,12 @@ def process_medical_data():
                 if len(all_labs) > 10:
                     print(f"  ... y {len(all_labs) - 10} valores más")
             
-            # Aplicar filtrado de pacientes según códigos obligatorios
+            # Aplicar filtrado de pacientes según códigos obligatorios y opcionales
             if codigos_obligatorios and len(codigos_obligatorios) > 0:
                 print(f"\n🔍 Aplicando filtrado de pacientes por códigos obligatorios - Modo: {modo_filtrado}")
                 print(f"📋 Códigos obligatorios: {codigos_obligatorios}")
+                if codigos_opcionales:
+                    print(f"📋 Códigos opcionales: {codigos_opcionales}")
                 
                 if modo_filtrado == "todos":
                     print(f"📋 Filtrando pacientes con TODOS los códigos obligatorios: {codigos_obligatorios}")
@@ -532,24 +534,59 @@ def process_medical_data():
                     patients_with_all = patients_with_codes[patients_with_codes.apply(lambda x: set(codigos_obligatorios).issubset(x))].index
                     print(f"👥 Pacientes con TODOS los códigos obligatorios: {len(patients_with_all):,}")
                     
-                    # Filtrar solo los registros de pacientes que tienen todos los códigos obligatorios
-                    df_final = df_lab[df_lab['Numero_Documento_Paciente'].isin(patients_with_all)].copy()
-                    print(f"📊 Registros finales (pacientes con TODOS los códigos obligatorios): {len(df_final):,}")
+                    # Si hay códigos opcionales, filtrar pacientes que tienen al menos uno de los opcionales
+                    if codigos_opcionales and len(codigos_opcionales) > 0:
+                        print(f"📋 Filtrando pacientes con al menos UNO de los códigos opcionales: {codigos_opcionales}")
+                        patients_with_optional = df_lab[df_lab['Codigo_Item'].isin(codigos_opcionales)]['Numero_Documento_Paciente'].unique()
+                        print(f"👥 Pacientes con códigos opcionales: {len(patients_with_optional):,}")
+                        
+                        # Pacientes que tienen TODOS los obligatorios Y al menos uno opcional
+                        patients_final = set(patients_with_all) & set(patients_with_optional)
+                        print(f"👥 Pacientes con TODOS los obligatorios Y al menos uno opcional: {len(patients_final):,}")
+                        
+                        # Filtrar solo los registros de pacientes que cumplen ambos criterios
+                        df_final = df_lab[df_lab['Numero_Documento_Paciente'].isin(patients_final)].copy()
+                        print(f"📊 Registros finales (pacientes con obligatorios + opcionales): {len(df_final):,}")
+                    else:
+                        # Solo códigos obligatorios, sin opcionales
+                        df_final = df_lab[df_lab['Numero_Documento_Paciente'].isin(patients_with_all)].copy()
+                        print(f"📊 Registros finales (pacientes con TODOS los códigos obligatorios): {len(df_final):,}")
                     
                 elif modo_filtrado == "cualquiera":
                     print(f"📋 Filtrando pacientes con CUALQUIERA de los códigos obligatorios: {codigos_obligatorios}")
                     patients_with_any = df_lab[df_lab['Codigo_Item'].isin(codigos_obligatorios)]['Numero_Documento_Paciente'].unique()
                     print(f"👥 Pacientes con CUALQUIERA de los códigos obligatorios: {len(patients_with_any):,}")
                     
-                    # Filtrar solo los registros de pacientes que tienen al menos uno de los códigos obligatorios
-                    df_final = df_lab[df_lab['Numero_Documento_Paciente'].isin(patients_with_any)].copy()
-                    print(f"📊 Registros finales (pacientes con CUALQUIERA de los códigos obligatorios): {len(df_final):,}")
+                    # Si hay códigos opcionales, filtrar pacientes que tienen al menos uno de los opcionales
+                    if codigos_opcionales and len(codigos_opcionales) > 0:
+                        print(f"📋 Filtrando pacientes con al menos UNO de los códigos opcionales: {codigos_opcionales}")
+                        patients_with_optional = df_lab[df_lab['Codigo_Item'].isin(codigos_opcionales)]['Numero_Documento_Paciente'].unique()
+                        print(f"👥 Pacientes con códigos opcionales: {len(patients_with_optional):,}")
+                        
+                        # Pacientes que tienen CUALQUIERA de los obligatorios Y al menos uno opcional
+                        patients_final = set(patients_with_any) & set(patients_with_optional)
+                        print(f"👥 Pacientes con CUALQUIERA de los obligatorios Y al menos uno opcional: {len(patients_final):,}")
+                        
+                        # Filtrar solo los registros de pacientes que cumplen ambos criterios
+                        df_final = df_lab[df_lab['Numero_Documento_Paciente'].isin(patients_final)].copy()
+                        print(f"📊 Registros finales (pacientes con obligatorios + opcionales): {len(df_final):,}")
+                    else:
+                        # Solo códigos obligatorios, sin opcionales
+                        df_final = df_lab[df_lab['Numero_Documento_Paciente'].isin(patients_with_any)].copy()
+                        print(f"📊 Registros finales (pacientes con CUALQUIERA de los códigos obligatorios): {len(df_final):,}")
                     
                 else:
                     print(f"⚠️  Modo de filtrado '{modo_filtrado}' no reconocido. Usando modo 'todos' por defecto.")
                     patients_with_codes = df_lab.groupby('Numero_Documento_Paciente')['Codigo_Item'].apply(set)
                     patients_with_all = patients_with_codes[patients_with_codes.apply(lambda x: set(codigos_obligatorios).issubset(x))].index
-                    df_final = df_lab[df_lab['Numero_Documento_Paciente'].isin(patients_with_all)].copy()
+                    
+                    # Si hay códigos opcionales, aplicar la misma lógica
+                    if codigos_opcionales and len(codigos_opcionales) > 0:
+                        patients_with_optional = df_lab[df_lab['Codigo_Item'].isin(codigos_opcionales)]['Numero_Documento_Paciente'].unique()
+                        patients_final = set(patients_with_all) & set(patients_with_optional)
+                        df_final = df_lab[df_lab['Numero_Documento_Paciente'].isin(patients_final)].copy()
+                    else:
+                        df_final = df_lab[df_lab['Numero_Documento_Paciente'].isin(patients_with_all)].copy()
                     print(f"📊 Registros finales (modo por defecto): {len(df_final):,}")
             else:
                 print(f"\n🔍 No se especificaron códigos obligatorios - no se aplica filtrado por códigos obligatorios")

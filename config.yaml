@@ -1,77 +1,7 @@
-# Códigos de item médicos a filtrar
-codigos_item:
-  obligatorios:  # Códigos que DEBEN estar presentes
-    - "99401.13"
-    - "Z019"
-    - "Z006"
-  opcionales:    # Códigos que pueden estar presentes (no son requeridos)
-    - "E669"
-    - "E6691"
-    - "E6692"
-    - "E6693"
-    - "E6690"
-    - "E785"
-  # Si no se especifican códigos, se considerarán todos los valores disponibles
-
-# Valores de laboratorio a filtrar (opcional - si está vacío, considera todos)
-valores_laboratorio: []
-# Si no se especifican valores, se considerarán todos los valores disponibles
-
-# Modo de filtrado para códigos de item
-filtrado_codigos:
-  modo: "todos"  # "todos" = pacientes con TODOS los códigos obligatorios, "cualquiera" = pacientes con CUALQUIERA de los códigos obligatorios
-  # Si modo = "todos": solo pacientes que tengan todos los códigos obligatorios
-  # Si modo = "cualquiera": pacientes que tengan al menos uno de los códigos obligatorios
-  # Los códigos opcionales no afectan el filtrado principal, solo se incluyen si están presentes
-
-# Filtro específico adicional
-filtro_especifico:
-  activo: false  # true = aplicar filtro específico, false = no aplicar
-  tipo_diagnostico: ["D", "R"]  # Puede ser D o R
-  codigo_item_especifico: "99199.22"  # Código específico a filtrar
-  valor_lab_especifico: ["N", "A"]  # Valores específicos de laboratorio (N o A)
-
-# Filtro de códigos con clasificación de perímetro abdominal
-filtro_perimetro:
-  activo: false  # true = aplicar filtro de perímetro, false = no aplicar
-  codigos_requeridos:  # Códigos que DEBEN estar presentes para este filtro
-    - "Z019"
-    - "99209.04"
-  clasificacion_perimetro:
-    genero_femenino:
-      normal: 88  # <= 88 es normal
-      anormal: 88  # > 88 es anormal
-    genero_masculino:
-      normal: 102  # <= 102 es normal
-      anormal: 102  # > 102 es anormal
-  modo_filtrado: "todos"  # "todos" = pacientes con TODOS los códigos requeridos
-
-# Filtro de valoración clínica sin factores de riesgo
-filtro_valoracion_clinica:
-  activo: false  # true = aplicar filtro de valoración clínica, false = no aplicar
-  codigos_requeridos:  # Códigos que DEBEN estar presentes para este filtro
-    - "Z019"
-    - "Z006"
-  modo_filtrado: "todos"  # "todos" = pacientes con TODOS los códigos requeridos
-
-# Filtro de valoración clínica con factores de riesgo
-filtro_valoracion_clinica_con_riesgo:
-  activo: false  # true = aplicar filtro de valoración clínica con riesgo, false = no aplicar
-  codigos_requeridos:  # Códigos que DEBEN estar presentes para este filtro
-    - "Z019"
-  codigos_factores_riesgo:  # Códigos de factores de riesgo (al menos uno debe estar presente)
-    - "E65X"
-    - "E669"
-    - "E6691"
-    - "E6692"
-    - "E6693"
-    - "E6690"
-  modo_filtrado: "todos"  # "todos" = pacientes con TODOS los códigos requeridos
-
 # Configuración adicional
 configuracion:
   tipo_diagnostico: "D"
-  archivo_entrada: "files/archivofinal.xlsx"
+  archivo_entrada: "files/input.xlsx"
   archivo_salida: "files/final_{timestamp}.csv"  # Nombre único con timestamp
   generar_nombre_unico: true  # Generar nombre único para cada ejecución
   
@@ -85,9 +15,74 @@ columnas:
   - Valor_Lab
   - Perimetro_Abdominal
   - Fecha_Atencion
+  - Nombre_Establecimiento
 
 # Reglas de validación
 validaciones:
   edad_minima: 0
   edad_maxima: 120
   generos_validos: ["M", "F"]
+
+# # Sobre peso
+# # Códigos de item médicos a filtrar
+# codigos_item:
+#   obligatorios:  # Códigos que DEBEN estar presentes
+#     - "Z019"
+#     - "E6690"
+# # Modo de filtrado para códigos de item
+# filtrado_codigos:
+#   modo: "todos"
+
+# # Sobre obesidad
+# # Códigos de item médicos a filtrar
+# codigos_item:
+#   obligatorios:  # Códigos que DEBEN estar presentes
+#     - "Z019"
+#     - "E669"
+# # Modo de filtrado para códigos de item
+# filtrado_codigos:
+#   modo: "todos"
+
+# # Sobre obesidad tipo 1
+# # Códigos de item médicos a filtrar
+# codigos_item:
+#   obligatorios:  # Códigos que DEBEN estar presentes
+#     - "Z019"
+#     - "E6691"
+# # Modo de filtrado para códigos de item
+# filtrado_codigos:
+#   modo: "todos"
+
+# # Sobre obesidad tipo 2
+# # Códigos de item médicos a filtrar
+# codigos_item:
+#   obligatorios:  # Códigos que DEBEN estar presentes
+#     - "Z019"
+#     - "E6692"
+# # Modo de filtrado para códigos de item
+# filtrado_codigos:
+#   modo: "todos"
+
+# # Sobre obesidad tipo 3
+# # Códigos de item médicos a filtrar
+# codigos_item:
+#   obligatorios:  # Códigos que DEBEN estar presentes
+#     - "Z019"
+#     - "E6693"
+# # Modo de filtrado para códigos de item
+# filtrado_codigos:
+#   modo: "todos"
+
+# Sobre obesidad tipo 3
+# Códigos de item médicos a filtrar
+codigos_item:
+  obligatorios:  # Códigos que DEBEN estar presentes
+    - "Z019"
+  opcionales:
+    - "E780"
+    - "E781"
+    - "E782"
+    - "E785"
+# Modo de filtrado para códigos de item
+filtrado_codigos:
+  modo: "todos"
