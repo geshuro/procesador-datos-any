@@ -13,6 +13,7 @@ columnas:
   - Codigo_Item
   - Tipo_Diagnostico
   - Valor_Lab
+  - Id_Correlativo
   - Perimetro_Abdominal
   - Fecha_Atencion
   - Nombre_Establecimiento
@@ -73,16 +74,37 @@ validaciones:
 # filtrado_codigos:
 #   modo: "todos"
 
-# Sobre obesidad tipo 3
-# Códigos de item médicos a filtrar
-codigos_item:
-  obligatorios:  # Códigos que DEBEN estar presentes
-    - "Z019"
-  opcionales:
-    - "E780"
-    - "E781"
-    - "E782"
-    - "E785"
-# Modo de filtrado para códigos de item
+# # Dislipidemia
+# # Códigos de item médicos a filtrar
+# codigos_item:
+#   obligatorios:  # Códigos que DEBEN estar presentes
+#     - "Z019"
+#   opcionales:
+#     - "E780"
+#     - "E781"
+#     - "E782"
+#     - "E785"
+# # Modo de filtrado para códigos de item
+# filtrado_codigos:
+#   modo: "todos"
+
+# # Presión arterial Enero Junio 2025
+# filtro_especifico:
+#   activo: true  # true = aplicar filtro específico, false = no aplicar
+#   tipo_diagnostico: ["D", "R"]  # Puede ser D o R
+#   codigo_item_especifico: "99199.22"  # Código específico a filtrar
+#   valor_lab_especifico: ["N", "A"]  # Valores específicos de laboratorio (N o A)
+#   fecha_atencion_rango: ["2025-01-01", "2025-06-30"]  # Rango de fechas de atención
+# filtrado_codigos:
+#   modo: "todos"
+
+# Presión arterial Julio Septiembre 2025
+filtro_especifico:
+  activo: true  # true = aplicar filtro específico, false = no aplicar
+  tipo_diagnostico: ["D", "R"]  # Puede ser D o R
+  codigo_item_especifico: "99199.22"  # Código específico a filtrar
+  tipo_presion_arterial_activo: true  # true = aplicar filtro específico, false = no aplicar
+  tipo_presion_arterial: ["S", "D"]  # Puede ser S (Sistólica) o D (Diastólica)
+  fecha_atencion_rango: ["2025-07-01", "2025-09-30"]  # Rango de fechas de atención
 filtrado_codigos:
   modo: "todos"

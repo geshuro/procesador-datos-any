@@ -65,8 +65,13 @@ def load_config():
                 'activo': False,
                 'tipo_diagnostico': ["D", "R"],
                 'codigo_item_especifico': "99199.22",
-                'valor_lab_especifico': ["N", "A"]
+                'valor_lab_especifico': ["N", "A"],
+                'fecha_atencion_rango': None
             }
+        
+        # Asegurar que existe fecha_atencion_rango en el filtro específico
+        if 'fecha_atencion_rango' not in config['filtro_especifico']:
+            config['filtro_especifico']['fecha_atencion_rango'] = None
         
         # Configurar filtro de perímetro por defecto
         if 'filtro_perimetro' not in config:
@@ -122,6 +127,10 @@ def load_config():
             print(f"   Tipo_Diagnostico: {config['filtro_especifico']['tipo_diagnostico']}")
             print(f"   Código_Item específico: {config['filtro_especifico']['codigo_item_especifico']}")
             print(f"   Valor_Lab específico: {config['filtro_especifico']['valor_lab_especifico']}")
+            if config['filtro_especifico']['fecha_atencion_rango']:
+                print(f"   Rango de fechas: {config['filtro_especifico']['fecha_atencion_rango'][0]} a {config['filtro_especifico']['fecha_atencion_rango'][1]}")
+            else:
+                print(f"   Rango de fechas: No especificado")
         else:
             print(f"✅ Filtro específico: INACTIVO")
         
@@ -266,14 +275,50 @@ def process_medical_data():
             print(f"   Código_Item: {filtro_especifico['codigo_item_especifico']}")
             print(f"   Valor_Lab: {filtro_especifico['valor_lab_especifico']}")
             
-            # Aplicar filtros específicos
+            # Aplicar filtros específicos básicos
             df_filtered = df[
                 (df['Tipo_Diagnostico'].isin(filtro_especifico['tipo_diagnostico'])) &
                 (df['Codigo_Item'] == filtro_especifico['codigo_item_especifico']) &
                 (df['Valor_Lab'].isin(filtro_especifico['valor_lab_especifico']))
             ].copy()
             
-            print(f"📊 Registros después del filtro específico: {len(df_filtered):,}")
+            print(f"📊 Registros después de filtros básicos: {len(df_filtered):,}")
+            
+            # Aplicar filtro por rango de fechas si está especificado
+            if filtro_especifico['fecha_atencion_rango'] and len(filtro_especifico['fecha_atencion_rango']) == 2:
+                fecha_inicio = filtro_especifico['fecha_atencion_rango'][0]
+                fecha_fin = filtro_especifico['fecha_atencion_rango'][1]
+                print(f"   Rango de fechas: {fecha_inicio} a {fecha_fin}")
+                
+                try:
+                    # Convertir fechas a datetime
+                    fecha_inicio_dt = pd.to_datetime(fecha_inicio)
+                    fecha_fin_dt = pd.to_datetime(fecha_fin)
+                    
+                    # Convertir Fecha_Atencion a datetime si no lo está
+                    df_filtered['Fecha_Atencion'] = pd.to_datetime(df_filtered['Fecha_Atencion'])
+                    
+                    # Aplicar filtro de rango de fechas
+                    df_filtered = df_filtered[
+                        (df_filtered['Fecha_Atencion'] >= fecha_inicio_dt) &
+                        (df_filtered['Fecha_Atencion'] <= fecha_fin_dt)
+                    ].copy()
+                    
+                    print(f"📊 Registros después del filtro de fechas: {len(df_filtered):,}")
+                    
+                    # Mostrar estadísticas de fechas
+                    if len(df_filtered) > 0:
+                        min_date = df_filtered['Fecha_Atencion'].min()
+                        max_date = df_filtered['Fecha_Atencion'].max()
+                        print(f"📅 Rango de fechas en datos filtrados: {min_date.date()} a {max_date.date()}")
+                    
+                except Exception as e:
+                    print(f"⚠️  Error al procesar filtro de fechas: {e}")
+                    print(f"📊 Continuando sin filtro de fechas...")
+            else:
+                print(f"   Rango de fechas: No especificado")
+            
+            print(f"📊 Registros después del filtro específico completo: {len(df_filtered):,}")
             
             # Mostrar distribución de Tipo_Diagnostico
             print(f"\n📊 Distribución de Tipo_Diagnostico:")
