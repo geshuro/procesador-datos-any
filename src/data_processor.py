@@ -101,8 +101,16 @@ def load_config():
             config['filtro_valoracion_clinica'] = {
                 'activo': False,
                 'codigos_requeridos': ["Z019", "Z006"],
-                'modo_filtrado': "todos"
+                'modo_filtrado': "todos",
+                'valor_lab_especifico': [],
+                'fecha_atencion_activo': False
             }
+        
+        # Asegurar que existen las nuevas claves en el filtro de valoración clínica
+        if 'valor_lab_especifico' not in config['filtro_valoracion_clinica']:
+            config['filtro_valoracion_clinica']['valor_lab_especifico'] = []
+        if 'fecha_atencion_activo' not in config['filtro_valoracion_clinica']:
+            config['filtro_valoracion_clinica']['fecha_atencion_activo'] = False
         
         # Configurar filtro de valoración clínica con factores de riesgo por defecto
         if 'filtro_valoracion_clinica_con_riesgo' not in config:
@@ -170,6 +178,12 @@ def load_config():
             print(f"✅ Filtro de valoración clínica: ACTIVO")
             print(f"   Códigos requeridos: {config['filtro_valoracion_clinica']['codigos_requeridos']}")
             print(f"   Modo de filtrado: {config['filtro_valoracion_clinica']['modo_filtrado']}")
+            if config['filtro_valoracion_clinica']['valor_lab_especifico']:
+                print(f"   Valor_Lab específico: {config['filtro_valoracion_clinica']['valor_lab_especifico']}")
+            if config['filtro_valoracion_clinica']['fecha_atencion_activo']:
+                print(f"   Filtro por fecha de atención: ACTIVO")
+            else:
+                print(f"   Filtro por fecha de atención: INACTIVO")
         else:
             print(f"✅ Filtro de valoración clínica: INACTIVO")
         
@@ -617,6 +631,12 @@ def process_medical_data():
             print(f"\n🏥 Aplicando filtro de valoración clínica sin factores de riesgo:")
             print(f"   Códigos requeridos: {filtro_valoracion_clinica['codigos_requeridos']}")
             print(f"   Modo de filtrado: {filtro_valoracion_clinica['modo_filtrado']}")
+            if filtro_valoracion_clinica.get('valor_lab_especifico'):
+                print(f"   Valor_Lab específico: {filtro_valoracion_clinica['valor_lab_especifico']}")
+            if filtro_valoracion_clinica.get('fecha_atencion_activo', False):
+                print(f"   Filtro por fecha de atención: ACTIVO")
+            else:
+                print(f"   Filtro por fecha de atención: INACTIVO")
             
             # Filtrar por códigos requeridos
             df_valoracion = df_clean[df_clean['Codigo_Item'].isin(filtro_valoracion_clinica['codigos_requeridos'])].copy()
@@ -627,6 +647,48 @@ def process_medical_data():
             code_counts = df_valoracion['Codigo_Item'].value_counts()
             for code, count in code_counts.items():
                 print(f"  {code}: {count:,} registros")
+            
+            # Aplicar filtro de Valor_Lab específico si está configurado
+            if filtro_valoracion_clinica.get('valor_lab_especifico'):
+                print(f"\n🔍 Aplicando filtro de Valor_Lab específico:")
+                print(f"   Valor_Lab requerido: {filtro_valoracion_clinica['valor_lab_especifico']}")
+                
+                # Filtrar registros Z006 que no tienen el Valor_Lab específico
+                z006_records = df_valoracion[df_valoracion['Codigo_Item'] == 'Z006']
+                z006_with_specific_lab = z006_records[z006_records['Valor_Lab'].isin(filtro_valoracion_clinica['valor_lab_especifico'])]
+                
+                print(f"📊 Registros Z006 con Valor_Lab específico: {len(z006_with_specific_lab):,}")
+                print(f"📊 Registros Z006 eliminados: {len(z006_records) - len(z006_with_specific_lab):,}")
+                
+                # Mantener solo registros Z006 con Valor_Lab específico y todos los otros códigos
+                other_codes = df_valoracion[df_valoracion['Codigo_Item'] != 'Z006']
+                df_valoracion = pd.concat([other_codes, z006_with_specific_lab], ignore_index=True)
+                print(f"📊 Registros después de filtro Valor_Lab específico: {len(df_valoracion):,}")
+            
+            # Verificar completitud de códigos por paciente y fecha si está activo
+            if filtro_valoracion_clinica.get('fecha_atencion_activo', False):
+                print(f"\n📅 Verificando completitud de códigos por paciente y fecha...")
+                
+                # Agrupar por paciente y fecha para verificar códigos
+                patient_date_codes = df_valoracion.groupby(['Numero_Documento_Paciente', 'Fecha_Atencion'])['Codigo_Item'].apply(set)
+                
+                # Filtrar solo grupos que tienen TODOS los códigos requeridos
+                complete_groups = patient_date_codes[patient_date_codes.apply(lambda x: set(filtro_valoracion_clinica['codigos_requeridos']).issubset(x))]
+                
+                print(f"📊 Grupos (paciente-fecha) con TODOS los códigos: {len(complete_groups):,}")
+                
+                # Crear lista de (paciente, fecha) que tienen todos los códigos
+                complete_patient_dates = complete_groups.index.tolist()
+                
+                # Filtrar registros que pertenecen a grupos completos
+                df_valoracion = df_valoracion[df_valoracion.set_index(['Numero_Documento_Paciente', 'Fecha_Atencion']).index.isin(complete_patient_dates)].copy()
+                
+                print(f"📊 Registros después de filtrado por completitud de códigos por fecha: {len(df_valoracion):,}")
+                
+                # Mostrar estadísticas de grupos eliminados
+                total_groups_before = len(patient_date_codes)
+                groups_removed = total_groups_before - len(complete_groups)
+                print(f"📊 Grupos (paciente-fecha) eliminados por códigos incompletos: {groups_removed:,}")
             
             # Aplicar filtrado de pacientes según modo
             if filtro_valoracion_clinica['modo_filtrado'] == "todos":
