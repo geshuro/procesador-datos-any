@@ -98,13 +98,29 @@ validaciones:
 # filtrado_codigos:
 #   modo: "todos"
 
-# Presión arterial Julio Septiembre 2025
-filtro_especifico:
-  activo: true  # true = aplicar filtro específico, false = no aplicar
-  tipo_diagnostico: ["D", "R"]  # Puede ser D o R
-  codigo_item_especifico: "99199.22"  # Código específico a filtrar
-  tipo_presion_arterial_activo: true  # true = aplicar filtro específico, false = no aplicar
-  tipo_presion_arterial: ["S", "D"]  # Puede ser S (Sistólica) o D (Diastólica)
-  fecha_atencion_rango: ["2025-07-01", "2025-09-30"]  # Rango de fechas de atención
-filtrado_codigos:
-  modo: "todos"
+# # Presión arterial Julio Septiembre 2025
+# filtro_especifico:
+#   activo: true  # true = aplicar filtro específico, false = no aplicar
+#   tipo_diagnostico: ["D", "R"]  # Puede ser D o R
+#   codigo_item_especifico: "99199.22"  # Código específico a filtrar
+#   tipo_presion_arterial_activo: true  # true = aplicar filtro específico, false = no aplicar
+#   tipo_presion_arterial: ["S", "D"]  # Puede ser S (Sistólica) o D (Diastólica)
+#   fecha_atencion_rango: ["2025-07-01", "2025-09-30"]  # Rango de fechas de atención
+# filtrado_codigos:
+#   modo: "todos"
+
+# Filtro de códigos con clasificación de perímetro abdominal
+filtro_perimetro:
+  activo: true  # true = aplicar filtro de perímetro, false = no aplicar
+  codigos_requeridos:  # Códigos que DEBEN estar presentes para este filtro
+    - "Z019"
+    - "99209.04"
+  clasificacion_perimetro:
+    genero_femenino:
+      normal: 88  # <= 88 es normal
+      anormal: 88  # > 88 es anormal
+    genero_masculino:
+      normal: 102  # <= 102 es normal
+      anormal: 102  # > 102 es anormal
+  fecha_atencion_activo: true  # true = aplicar filtro de fecha de atención, false = no aplicar
+  modo_filtrado: "todos"  # "todos" = pacientes con TODOS los códigos requeridos

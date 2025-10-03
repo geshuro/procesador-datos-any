@@ -88,8 +88,13 @@ def load_config():
                     'genero_femenino': {'normal': 88, 'anormal': 88},
                     'genero_masculino': {'normal': 102, 'anormal': 102}
                 },
-                'modo_filtrado': "todos"
+                'modo_filtrado': "todos",
+                'fecha_atencion_activo': False
             }
+        
+        # Asegurar que existe fecha_atencion_activo en el filtro de perímetro
+        if 'fecha_atencion_activo' not in config['filtro_perimetro']:
+            config['filtro_perimetro']['fecha_atencion_activo'] = False
         
         # Configurar filtro de valoración clínica por defecto
         if 'filtro_valoracion_clinica' not in config:
@@ -153,6 +158,10 @@ def load_config():
             print(f"   Clasificación Femenino: Normal ≤{config['filtro_perimetro']['clasificacion_perimetro']['genero_femenino']['normal']}cm, Anormal >{config['filtro_perimetro']['clasificacion_perimetro']['genero_femenino']['anormal']}cm")
             print(f"   Clasificación Masculino: Normal ≤{config['filtro_perimetro']['clasificacion_perimetro']['genero_masculino']['normal']}cm, Anormal >{config['filtro_perimetro']['clasificacion_perimetro']['genero_masculino']['anormal']}cm")
             print(f"   Modo de filtrado: {config['filtro_perimetro']['modo_filtrado']}")
+            if config['filtro_perimetro']['fecha_atencion_activo']:
+                print(f"   Filtro por fecha de atención: ACTIVO")
+            else:
+                print(f"   Filtro por fecha de atención: INACTIVO")
         else:
             print(f"✅ Filtro de perímetro: INACTIVO")
         
@@ -198,22 +207,53 @@ def generate_unique_filename(base_filename):
 def classify_perimeter_abdominal(df, config):
     """
     Clasifica el perímetro abdominal según género y rangos específicos
+    Si fecha_atencion_activo es True, agrupa por paciente y fecha
     """
     filtro_perimetro = config['filtro_perimetro']
     clasificacion = filtro_perimetro['clasificacion_perimetro']
+    fecha_atencion_activo = filtro_perimetro.get('fecha_atencion_activo', False)
     
     # Crear nueva columna para clasificación
     df['Clasificacion_Perimetro'] = 'NO_CLASIFICADO'
     
-    # Clasificar por género femenino
-    mask_f = (df['Genero'] == 'F') & (df['Perimetro_Abdominal'].notna())
-    df.loc[mask_f & (df['Perimetro_Abdominal'] <= clasificacion['genero_femenino']['normal']), 'Clasificacion_Perimetro'] = 'NORMAL'
-    df.loc[mask_f & (df['Perimetro_Abdominal'] > clasificacion['genero_femenino']['anormal']), 'Clasificacion_Perimetro'] = 'ANORMAL'
-    
-    # Clasificar por género masculino
-    mask_m = (df['Genero'] == 'M') & (df['Perimetro_Abdominal'].notna())
-    df.loc[mask_m & (df['Perimetro_Abdominal'] <= clasificacion['genero_masculino']['normal']), 'Clasificacion_Perimetro'] = 'NORMAL'
-    df.loc[mask_m & (df['Perimetro_Abdominal'] > clasificacion['genero_masculino']['anormal']), 'Clasificacion_Perimetro'] = 'ANORMAL'
+    if fecha_atencion_activo:
+        print(f"📅 Clasificando perímetro por paciente y fecha de atención...")
+        
+        # Agrupar por paciente y fecha para clasificación
+        for (patient_id, fecha), group in df.groupby(['Numero_Documento_Paciente', 'Fecha_Atencion']):
+            # Clasificar por género femenino
+            mask_f = (group['Genero'] == 'F') & (group['Perimetro_Abdominal'].notna())
+            df.loc[(df['Numero_Documento_Paciente'] == patient_id) & 
+                   (df['Fecha_Atencion'] == fecha) & 
+                   mask_f & (df['Perimetro_Abdominal'] <= clasificacion['genero_femenino']['normal']), 
+                   'Clasificacion_Perimetro'] = 'NORMAL'
+            df.loc[(df['Numero_Documento_Paciente'] == patient_id) & 
+                   (df['Fecha_Atencion'] == fecha) & 
+                   mask_f & (df['Perimetro_Abdominal'] > clasificacion['genero_femenino']['anormal']), 
+                   'Clasificacion_Perimetro'] = 'ANORMAL'
+            
+            # Clasificar por género masculino
+            mask_m = (group['Genero'] == 'M') & (group['Perimetro_Abdominal'].notna())
+            df.loc[(df['Numero_Documento_Paciente'] == patient_id) & 
+                   (df['Fecha_Atencion'] == fecha) & 
+                   mask_m & (df['Perimetro_Abdominal'] <= clasificacion['genero_masculino']['normal']), 
+                   'Clasificacion_Perimetro'] = 'NORMAL'
+            df.loc[(df['Numero_Documento_Paciente'] == patient_id) & 
+                   (df['Fecha_Atencion'] == fecha) & 
+                   mask_m & (df['Perimetro_Abdominal'] > clasificacion['genero_masculino']['anormal']), 
+                   'Clasificacion_Perimetro'] = 'ANORMAL'
+    else:
+        print(f"📅 Clasificando perímetro por registro individual...")
+        
+        # Clasificar por género femenino
+        mask_f = (df['Genero'] == 'F') & (df['Perimetro_Abdominal'].notna())
+        df.loc[mask_f & (df['Perimetro_Abdominal'] <= clasificacion['genero_femenino']['normal']), 'Clasificacion_Perimetro'] = 'NORMAL'
+        df.loc[mask_f & (df['Perimetro_Abdominal'] > clasificacion['genero_femenino']['anormal']), 'Clasificacion_Perimetro'] = 'ANORMAL'
+        
+        # Clasificar por género masculino
+        mask_m = (df['Genero'] == 'M') & (df['Perimetro_Abdominal'].notna())
+        df.loc[mask_m & (df['Perimetro_Abdominal'] <= clasificacion['genero_masculino']['normal']), 'Clasificacion_Perimetro'] = 'NORMAL'
+        df.loc[mask_m & (df['Perimetro_Abdominal'] > clasificacion['genero_masculino']['anormal']), 'Clasificacion_Perimetro'] = 'ANORMAL'
     
     return df
 
@@ -498,6 +538,10 @@ def process_medical_data():
             print(f"\n📏 Aplicando filtro de perímetro abdominal:")
             print(f"   Códigos requeridos: {filtro_perimetro['codigos_requeridos']}")
             print(f"   Modo de filtrado: {filtro_perimetro['modo_filtrado']}")
+            if filtro_perimetro.get('fecha_atencion_activo', False):
+                print(f"   Filtro por fecha de atención: ACTIVO")
+            else:
+                print(f"   Filtro por fecha de atención: INACTIVO")
             
             # Filtrar por códigos requeridos
             df_perimetro = df_clean[df_clean['Codigo_Item'].isin(filtro_perimetro['codigos_requeridos'])].copy()
@@ -508,6 +552,31 @@ def process_medical_data():
             code_counts = df_perimetro['Codigo_Item'].value_counts()
             for code, count in code_counts.items():
                 print(f"  {code}: {count:,} registros")
+            
+            # Verificar completitud de códigos por paciente y fecha
+            if filtro_perimetro.get('fecha_atencion_activo', False):
+                print(f"\n📅 Verificando completitud de códigos por paciente y fecha...")
+                
+                # Agrupar por paciente y fecha para verificar códigos
+                patient_date_codes = df_perimetro.groupby(['Numero_Documento_Paciente', 'Fecha_Atencion'])['Codigo_Item'].apply(set)
+                
+                # Filtrar solo grupos que tienen TODOS los códigos requeridos
+                complete_groups = patient_date_codes[patient_date_codes.apply(lambda x: set(filtro_perimetro['codigos_requeridos']).issubset(x))]
+                
+                print(f"📊 Grupos (paciente-fecha) con TODOS los códigos: {len(complete_groups):,}")
+                
+                # Crear lista de (paciente, fecha) que tienen todos los códigos
+                complete_patient_dates = complete_groups.index.tolist()
+                
+                # Filtrar registros que pertenecen a grupos completos
+                df_perimetro = df_perimetro[df_perimetro.set_index(['Numero_Documento_Paciente', 'Fecha_Atencion']).index.isin(complete_patient_dates)].copy()
+                
+                print(f"📊 Registros después de filtrado por completitud de códigos por fecha: {len(df_perimetro):,}")
+                
+                # Mostrar estadísticas de grupos eliminados
+                total_groups_before = len(patient_date_codes)
+                groups_removed = total_groups_before - len(complete_groups)
+                print(f"📊 Grupos (paciente-fecha) eliminados por códigos incompletos: {groups_removed:,}")
             
             # Aplicar filtrado de pacientes según modo
             if filtro_perimetro['modo_filtrado'] == "todos":
