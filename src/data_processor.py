@@ -66,12 +66,18 @@ def load_config():
                 'tipo_diagnostico': ["D", "R"],
                 'codigo_item_especifico': "99199.22",
                 'valor_lab_especifico': ["N", "A"],
-                'fecha_atencion_rango': None
+                'fecha_atencion_rango': None,
+                'tipo_presion_arterial_activo': False,
+                'tipo_presion_arterial': ["S", "D"]
             }
         
-        # Asegurar que existe fecha_atencion_rango en el filtro específico
+        # Asegurar que existen todas las claves en el filtro específico
         if 'fecha_atencion_rango' not in config['filtro_especifico']:
             config['filtro_especifico']['fecha_atencion_rango'] = None
+        if 'tipo_presion_arterial_activo' not in config['filtro_especifico']:
+            config['filtro_especifico']['tipo_presion_arterial_activo'] = False
+        if 'tipo_presion_arterial' not in config['filtro_especifico']:
+            config['filtro_especifico']['tipo_presion_arterial'] = ["S", "D"]
         
         # Configurar filtro de perímetro por defecto
         if 'filtro_perimetro' not in config:
@@ -126,11 +132,17 @@ def load_config():
             print(f"✅ Filtro específico: ACTIVO")
             print(f"   Tipo_Diagnostico: {config['filtro_especifico']['tipo_diagnostico']}")
             print(f"   Código_Item específico: {config['filtro_especifico']['codigo_item_especifico']}")
-            print(f"   Valor_Lab específico: {config['filtro_especifico']['valor_lab_especifico']}")
+            if 'valor_lab_especifico' in config['filtro_especifico'] and config['filtro_especifico']['valor_lab_especifico']:
+                print(f"   Valor_Lab específico: {config['filtro_especifico']['valor_lab_especifico']}")
             if config['filtro_especifico']['fecha_atencion_rango']:
                 print(f"   Rango de fechas: {config['filtro_especifico']['fecha_atencion_rango'][0]} a {config['filtro_especifico']['fecha_atencion_rango'][1]}")
             else:
                 print(f"   Rango de fechas: No especificado")
+            if config['filtro_especifico']['tipo_presion_arterial_activo']:
+                print(f"   Filtro presión arterial: ACTIVO")
+                print(f"   Tipos presión arterial: {config['filtro_especifico']['tipo_presion_arterial']}")
+            else:
+                print(f"   Filtro presión arterial: INACTIVO")
         else:
             print(f"✅ Filtro específico: INACTIVO")
         
@@ -273,14 +285,18 @@ def process_medical_data():
             print(f"\n🎯 Aplicando filtro específico:")
             print(f"   Tipo_Diagnostico: {filtro_especifico['tipo_diagnostico']}")
             print(f"   Código_Item: {filtro_especifico['codigo_item_especifico']}")
-            print(f"   Valor_Lab: {filtro_especifico['valor_lab_especifico']}")
+            if 'valor_lab_especifico' in filtro_especifico and filtro_especifico['valor_lab_especifico']:
+                print(f"   Valor_Lab: {filtro_especifico['valor_lab_especifico']}")
             
             # Aplicar filtros específicos básicos
             df_filtered = df[
                 (df['Tipo_Diagnostico'].isin(filtro_especifico['tipo_diagnostico'])) &
-                (df['Codigo_Item'] == filtro_especifico['codigo_item_especifico']) &
-                (df['Valor_Lab'].isin(filtro_especifico['valor_lab_especifico']))
+                (df['Codigo_Item'] == filtro_especifico['codigo_item_especifico'])
             ].copy()
+            
+            # Aplicar filtro de Valor_Lab solo si está especificado
+            if 'valor_lab_especifico' in filtro_especifico and filtro_especifico['valor_lab_especifico']:
+                df_filtered = df_filtered[df_filtered['Valor_Lab'].isin(filtro_especifico['valor_lab_especifico'])].copy()
             
             print(f"📊 Registros después de filtros básicos: {len(df_filtered):,}")
             
@@ -318,6 +334,89 @@ def process_medical_data():
             else:
                 print(f"   Rango de fechas: No especificado")
             
+            # Aplicar filtro de presión arterial si está activo
+            if filtro_especifico['tipo_presion_arterial_activo']:
+                print(f"\n🩺 Aplicando filtro de presión arterial:")
+                print(f"   Tipos presión arterial: {filtro_especifico['tipo_presion_arterial']}")
+                
+                try:
+                    # Verificar que Id_Correlativo existe
+                    if 'Id_Correlativo' not in df_filtered.columns:
+                        print(f"❌ Error: Columna Id_Correlativo no encontrada")
+                        return False
+                    
+                    # Convertir Valor_Lab a numérico para cálculos
+                    df_filtered['Valor_Lab_Numeric'] = pd.to_numeric(df_filtered['Valor_Lab'], errors='coerce')
+                    
+                    # Calcular tipo de presión arterial por paciente y fecha
+                    print(f"📊 Calculando tipo de presión arterial por paciente y fecha...")
+                    
+                    # Obtener min y max Id_Correlativo por paciente y fecha
+                    patient_date_correlativo = df_filtered.groupby(['Numero_Documento_Paciente', 'Fecha_Atencion'])['Id_Correlativo'].agg(['min', 'max']).reset_index()
+                    patient_date_correlativo.columns = ['Numero_Documento_Paciente', 'Fecha_Atencion', 'Id_Correlativo_Min', 'Id_Correlativo_Max']
+                    
+                    # Crear mapeo de tipo de presión arterial
+                    df_filtered = df_filtered.merge(patient_date_correlativo, on=['Numero_Documento_Paciente', 'Fecha_Atencion'], how='left')
+                    
+                    # Asignar tipo de presión arterial
+                    df_filtered['tipo_presion'] = 'D'  # Por defecto Diastólica
+                    df_filtered.loc[df_filtered['Id_Correlativo'] == df_filtered['Id_Correlativo_Min'], 'tipo_presion'] = 'S'
+                    
+                    # Calcular valor de presión
+                    df_filtered['valor_presion'] = 'NORMAL'
+                    df_filtered.loc[(df_filtered['tipo_presion'] == 'S') & (df_filtered['Valor_Lab_Numeric'] >= 140), 'valor_presion'] = 'ANORMAL'
+                    df_filtered.loc[(df_filtered['tipo_presion'] == 'D') & (df_filtered['Valor_Lab_Numeric'] >= 90), 'valor_presion'] = 'ANORMAL'
+                    
+                    # Calcular valor_presion_total por paciente y fecha
+                    print(f"📊 Calculando valor_presion_total por paciente y fecha...")
+                    
+                    # Crear agregación por paciente y fecha para determinar si hay algún valor ANORMAL
+                    patient_date_anormal = df_filtered.groupby(['Numero_Documento_Paciente', 'Fecha_Atencion'])['valor_presion'].apply(
+                        lambda x: 'ANORMAL' if 'ANORMAL' in x.values else 'NORMAL'
+                    ).reset_index()
+                    patient_date_anormal.columns = ['Numero_Documento_Paciente', 'Fecha_Atencion', 'valor_presion_total']
+                    
+                    # Merge con el dataframe principal
+                    df_filtered = df_filtered.merge(patient_date_anormal, on=['Numero_Documento_Paciente', 'Fecha_Atencion'], how='left')
+                    
+                    # Filtrar solo los tipos de presión arterial especificados
+                    df_filtered = df_filtered[df_filtered['tipo_presion'].isin(filtro_especifico['tipo_presion_arterial'])].copy()
+                    
+                    print(f"📊 Registros después del filtro de presión arterial: {len(df_filtered):,}")
+                    
+                    # Mostrar distribución de tipos de presión
+                    print(f"\n📊 Distribución de tipos de presión arterial:")
+                    presion_counts = df_filtered['tipo_presion'].value_counts()
+                    for tipo, count in presion_counts.items():
+                        print(f"  {tipo}: {count:,} registros")
+                    
+                    # Mostrar distribución de valores de presión
+                    print(f"\n📊 Distribución de valores de presión:")
+                    valor_counts = df_filtered['valor_presion'].value_counts()
+                    for valor, count in valor_counts.items():
+                        print(f"  {valor}: {count:,} registros")
+                    
+                    # Mostrar estadísticas por tipo
+                    print(f"\n📊 Estadísticas por tipo de presión:")
+                    for tipo in filtro_especifico['tipo_presion_arterial']:
+                        tipo_data = df_filtered[df_filtered['tipo_presion'] == tipo]
+                        if len(tipo_data) > 0:
+                            normal_count = len(tipo_data[tipo_data['valor_presion'] == 'NORMAL'])
+                            anormal_count = len(tipo_data[tipo_data['valor_presion'] == 'ANORMAL'])
+                            print(f"  {tipo}: Normal={normal_count}, Anormal={anormal_count}")
+                    
+                    # Mostrar distribución de valor_presion_total
+                    print(f"\n📊 Distribución de valor_presion_total:")
+                    total_counts = df_filtered['valor_presion_total'].value_counts()
+                    for valor, count in total_counts.items():
+                        print(f"  {valor}: {count:,} registros")
+                    
+                except Exception as e:
+                    print(f"⚠️  Error al procesar filtro de presión arterial: {e}")
+                    print(f"📊 Continuando sin filtro de presión arterial...")
+            else:
+                print(f"   Filtro presión arterial: INACTIVO")
+            
             print(f"📊 Registros después del filtro específico completo: {len(df_filtered):,}")
             
             # Mostrar distribución de Tipo_Diagnostico
@@ -341,13 +440,21 @@ def process_medical_data():
         # PASO 4: Seleccionar columnas específicas
         print(f"\n🔧 Seleccionando columnas específicas: {columns_to_keep}")
         
+        # Agregar columnas de presión arterial si el filtro está activo
+        if aplicar_filtro_especifico and filtro_especifico['tipo_presion_arterial_activo']:
+            additional_columns = ['tipo_presion', 'valor_presion', 'valor_presion_total']
+            columns_to_keep_extended = columns_to_keep + additional_columns
+            print(f"🔧 Agregando columnas de presión arterial: {additional_columns}")
+        else:
+            columns_to_keep_extended = columns_to_keep
+        
         # Verificar que las columnas existen
-        missing_columns = [col for col in columns_to_keep if col not in df_filtered.columns]
+        missing_columns = [col for col in columns_to_keep_extended if col not in df_filtered.columns]
         if missing_columns:
             print(f"❌ Error: Columnas no encontradas: {missing_columns}")
             return False
         
-        df_selected = df_filtered[columns_to_keep].copy()
+        df_selected = df_filtered[columns_to_keep_extended].copy()
         print(f"📊 Registros después de seleccionar columnas: {len(df_selected):,}")
         
         # PASO 5: Eliminar registros nulos de Numero_Documento_Paciente
@@ -656,9 +763,10 @@ def process_medical_data():
         print(f"\n🔧 Aplicando formato numérico entero a Numero_Documento_Paciente...")
         df_final['Numero_Documento_Paciente'] = df_final['Numero_Documento_Paciente'].astype('Int64')
         
-        # PASO 10: Ordenar por Numero_Documento_Paciente
-        print(f"\n📋 Ordenando registros por Numero_Documento_Paciente...")
-        df_final = df_final.sort_values('Numero_Documento_Paciente')
+        # PASO 10: Ordenar por Numero_Documento_Paciente y 
+        
+        print(f"\n📋 Ordenando registros por Numero_Documento_Paciente y Fecha_Atencion...")
+        df_final = df_final.sort_values(['Numero_Documento_Paciente', 'Fecha_Atencion'])
         
         # PASO 11: Aplicar reglas finales de calidad
         print(f"\n🔧 Aplicando reglas finales de calidad...")
@@ -780,7 +888,11 @@ def process_medical_data():
             print(f"✅ Filtro específico aplicado: ✅")
             print(f"   Tipo_Diagnostico: {filtro_especifico['tipo_diagnostico']}")
             print(f"   Código_Item: {filtro_especifico['codigo_item_especifico']}")
-            print(f"   Valor_Lab: {filtro_especifico['valor_lab_especifico']}")
+            if 'valor_lab_especifico' in filtro_especifico and filtro_especifico['valor_lab_especifico']:
+                print(f"   Valor_Lab: {filtro_especifico['valor_lab_especifico']}")
+            if filtro_especifico['tipo_presion_arterial_activo']:
+                print(f"   Filtro presión arterial: ACTIVO")
+                print(f"   Tipos presión arterial: {filtro_especifico['tipo_presion_arterial']}")
         elif aplicar_filtro_perimetro:
             print(f"✅ Filtro de perímetro aplicado: ✅")
             print(f"   Códigos requeridos: {filtro_perimetro['codigos_requeridos']}")
