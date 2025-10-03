@@ -742,53 +742,80 @@ def process_medical_data():
             for code, count in code_counts.items():
                 print(f"  {code}: {count:,} registros")
             
-            # Filtrar por códigos de factores de riesgo
-            df_factores_riesgo = df_clean[df_clean['Codigo_Item'].isin(filtro_valoracion_clinica_con_riesgo['codigos_factores_riesgo'])].copy()
-            print(f"📊 Registros con códigos de factores de riesgo: {len(df_factores_riesgo):,}")
+            # Filtrar por códigos de factores de riesgo (solo si existen)
+            codigos_factores_riesgo = filtro_valoracion_clinica_con_riesgo.get('codigos_factores_riesgo', [])
             
-            # Mostrar distribución de códigos de factores de riesgo
-            print(f"\n📊 Distribución de códigos de factores de riesgo:")
-            riesgo_counts = df_factores_riesgo['Codigo_Item'].value_counts()
-            for code, count in riesgo_counts.items():
-                print(f"  {code}: {count:,} registros")
-            
-            # Aplicar filtro de Valor_Lab específico si está configurado
-            if filtro_valoracion_clinica_con_riesgo.get('valor_lab_especifico'):
-                print(f"\n🔍 Aplicando filtro de Valor_Lab específico a códigos de factores de riesgo:")
-                print(f"   Valor_Lab requerido: {filtro_valoracion_clinica_con_riesgo['valor_lab_especifico']}")
+            if codigos_factores_riesgo:
+                df_factores_riesgo = df_clean[df_clean['Codigo_Item'].isin(codigos_factores_riesgo)].copy()
+                print(f"📊 Registros con códigos de factores de riesgo: {len(df_factores_riesgo):,}")
                 
-                # Filtrar registros de factores de riesgo que no tienen el Valor_Lab específico
-                factores_riesgo_with_specific_lab = df_factores_riesgo[df_factores_riesgo['Valor_Lab'].isin(filtro_valoracion_clinica_con_riesgo['valor_lab_especifico'])]
+                # Mostrar distribución de códigos de factores de riesgo
+                print(f"\n📊 Distribución de códigos de factores de riesgo:")
+                riesgo_counts = df_factores_riesgo['Codigo_Item'].value_counts()
+                for code, count in riesgo_counts.items():
+                    print(f"  {code}: {count:,} registros")
                 
-                print(f"📊 Registros de factores de riesgo con Valor_Lab específico: {len(factores_riesgo_with_specific_lab):,}")
-                print(f"📊 Registros de factores de riesgo eliminados: {len(df_factores_riesgo) - len(factores_riesgo_with_specific_lab):,}")
-                
-                # Actualizar df_factores_riesgo con solo los registros que tienen el Valor_Lab específico
-                df_factores_riesgo = factores_riesgo_with_specific_lab.copy()
-                print(f"📊 Registros de factores de riesgo después de filtro Valor_Lab específico: {len(df_factores_riesgo):,}")
+                # Aplicar filtro de Valor_Lab específico si está configurado
+                if filtro_valoracion_clinica_con_riesgo.get('valor_lab_especifico'):
+                    print(f"\n🔍 Aplicando filtro de Valor_Lab específico a códigos de factores de riesgo:")
+                    print(f"   Valor_Lab requerido: {filtro_valoracion_clinica_con_riesgo['valor_lab_especifico']}")
+                    
+                    # Filtrar registros de factores de riesgo que no tienen el Valor_Lab específico
+                    factores_riesgo_with_specific_lab = df_factores_riesgo[df_factores_riesgo['Valor_Lab'].isin(filtro_valoracion_clinica_con_riesgo['valor_lab_especifico'])]
+                    
+                    print(f"📊 Registros de factores de riesgo con Valor_Lab específico: {len(factores_riesgo_with_specific_lab):,}")
+                    print(f"📊 Registros de factores de riesgo eliminados: {len(df_factores_riesgo) - len(factores_riesgo_with_specific_lab):,}")
+                    
+                    # Actualizar df_factores_riesgo con solo los registros que tienen el Valor_Lab específico
+                    df_factores_riesgo = factores_riesgo_with_specific_lab.copy()
+                    print(f"📊 Registros de factores de riesgo después de filtro Valor_Lab específico: {len(df_factores_riesgo):,}")
+            else:
+                print(f"⚠️  No hay códigos de factores de riesgo configurados, saltando filtrado de factores de riesgo")
+                df_factores_riesgo = pd.DataFrame()  # DataFrame vacío
             
             # Verificar completitud de códigos por paciente y fecha si está activo
             if filtro_valoracion_clinica_con_riesgo.get('fecha_atencion_activo', False):
                 print(f"\n📅 Verificando completitud de códigos por paciente y fecha...")
                 
-                # Combinar códigos requeridos y de factores de riesgo para verificar completitud
-                todos_codigos_riesgo = filtro_valoracion_clinica_con_riesgo['codigos_requeridos'] + filtro_valoracion_clinica_con_riesgo['codigos_factores_riesgo']
+                # Verificar si hay códigos de factores de riesgo
+                codigos_factores_riesgo = filtro_valoracion_clinica_con_riesgo.get('codigos_factores_riesgo', [])
                 
-                # Filtrar registros que tienen códigos requeridos o de factores de riesgo
-                df_todos_codigos = df_clean[df_clean['Codigo_Item'].isin(todos_codigos_riesgo)].copy()
-                
-                # Agrupar por paciente y fecha para verificar códigos
-                patient_date_codes = df_todos_codigos.groupby(['Numero_Documento_Paciente', 'Fecha_Atencion'])['Codigo_Item'].apply(set)
-                
-                # Filtrar solo grupos que tienen al menos un código requerido Y al menos un factor de riesgo
-                def has_required_and_risk_codes(codes):
-                    has_required = any(code in codes for code in filtro_valoracion_clinica_con_riesgo['codigos_requeridos'])
-                    has_risk = any(code in codes for code in filtro_valoracion_clinica_con_riesgo['codigos_factores_riesgo'])
-                    return has_required and has_risk
-                
-                complete_groups = patient_date_codes[patient_date_codes.apply(has_required_and_risk_codes)]
-                
-                print(f"📊 Grupos (paciente-fecha) con códigos requeridos Y factores de riesgo: {len(complete_groups):,}")
+                if codigos_factores_riesgo:
+                    # Combinar códigos requeridos y de factores de riesgo para verificar completitud
+                    todos_codigos_riesgo = filtro_valoracion_clinica_con_riesgo['codigos_requeridos'] + codigos_factores_riesgo
+                    
+                    # Filtrar registros que tienen códigos requeridos o de factores de riesgo
+                    df_todos_codigos = df_clean[df_clean['Codigo_Item'].isin(todos_codigos_riesgo)].copy()
+                    
+                    # Agrupar por paciente y fecha para verificar códigos
+                    patient_date_codes = df_todos_codigos.groupby(['Numero_Documento_Paciente', 'Fecha_Atencion'])['Codigo_Item'].apply(set)
+                    
+                    # Filtrar solo grupos que tienen al menos un código requerido Y al menos un factor de riesgo
+                    def has_required_and_risk_codes(codes):
+                        has_required = any(code in codes for code in filtro_valoracion_clinica_con_riesgo['codigos_requeridos'])
+                        has_risk = any(code in codes for code in codigos_factores_riesgo)
+                        return has_required and has_risk
+                    
+                    complete_groups = patient_date_codes[patient_date_codes.apply(has_required_and_risk_codes)]
+                    
+                    print(f"📊 Grupos (paciente-fecha) con códigos requeridos Y factores de riesgo: {len(complete_groups):,}")
+                else:
+                    # Si no hay códigos de factores de riesgo, solo verificar códigos requeridos
+                    print(f"⚠️  No hay códigos de factores de riesgo configurados, solo verificando códigos requeridos")
+                    
+                    # Filtrar registros que tienen códigos requeridos
+                    df_todos_codigos = df_clean[df_clean['Codigo_Item'].isin(filtro_valoracion_clinica_con_riesgo['codigos_requeridos'])].copy()
+                    
+                    # Agrupar por paciente y fecha para verificar códigos
+                    patient_date_codes = df_todos_codigos.groupby(['Numero_Documento_Paciente', 'Fecha_Atencion'])['Codigo_Item'].apply(set)
+                    
+                    # Filtrar solo grupos que tienen TODOS los códigos requeridos
+                    def has_all_required_codes(codes):
+                        return set(filtro_valoracion_clinica_con_riesgo['codigos_requeridos']).issubset(codes)
+                    
+                    complete_groups = patient_date_codes[patient_date_codes.apply(has_all_required_codes)]
+                    
+                    print(f"📊 Grupos (paciente-fecha) con TODOS los códigos requeridos: {len(complete_groups):,}")
                 
                 # Crear lista de (paciente, fecha) que tienen códigos completos
                 complete_patient_dates = complete_groups.index.tolist()
@@ -806,19 +833,28 @@ def process_medical_data():
                 # Usar los datos filtrados por fecha
                 df_final = df_todos_codigos.copy()
             else:
-                # Obtener pacientes que tienen Z019
-                pacientes_con_z019 = df_valoracion_con_riesgo['Numero_Documento_Paciente'].unique()
-                print(f"👥 Pacientes con código Z019: {len(pacientes_con_z019):,}")
+                # Obtener pacientes que tienen códigos requeridos
+                pacientes_con_requeridos = df_valoracion_con_riesgo['Numero_Documento_Paciente'].unique()
+                print(f"👥 Pacientes con códigos requeridos: {len(pacientes_con_requeridos):,}")
                 
-                # Obtener pacientes que tienen al menos un factor de riesgo
-                pacientes_con_riesgo = df_factores_riesgo['Numero_Documento_Paciente'].unique()
-                print(f"👥 Pacientes con factores de riesgo: {len(pacientes_con_riesgo):,}")
+                # Verificar si hay códigos de factores de riesgo
+                codigos_factores_riesgo = filtro_valoracion_clinica_con_riesgo.get('codigos_factores_riesgo', [])
                 
-                # Pacientes que tienen Z019 Y al menos un factor de riesgo
-                pacientes_finales = set(pacientes_con_z019) & set(pacientes_con_riesgo)
-                print(f"👥 Pacientes con Z019 Y factores de riesgo: {len(pacientes_finales):,}")
+                if codigos_factores_riesgo:
+                    # Obtener pacientes que tienen al menos un factor de riesgo
+                    pacientes_con_riesgo = df_factores_riesgo['Numero_Documento_Paciente'].unique()
+                    print(f"👥 Pacientes con factores de riesgo: {len(pacientes_con_riesgo):,}")
+                    
+                    # Pacientes que tienen códigos requeridos Y al menos un factor de riesgo
+                    pacientes_finales = set(pacientes_con_requeridos) & set(pacientes_con_riesgo)
+                    print(f"👥 Pacientes con códigos requeridos Y factores de riesgo: {len(pacientes_finales):,}")
+                else:
+                    # Si no hay códigos de factores de riesgo, solo usar pacientes con códigos requeridos
+                    print(f"⚠️  No hay códigos de factores de riesgo configurados, usando solo códigos requeridos")
+                    pacientes_finales = set(pacientes_con_requeridos)
+                    print(f"👥 Pacientes con códigos requeridos: {len(pacientes_finales):,}")
                 
-                # Filtrar registros de pacientes que cumplen ambos criterios
+                # Filtrar registros de pacientes que cumplen los criterios
                 df_final = df_clean[df_clean['Numero_Documento_Paciente'].isin(pacientes_finales)].copy()
             
             print(f"📊 Registros finales del filtro de valoración clínica con factores de riesgo: {len(df_final):,}")
