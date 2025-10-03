@@ -125,12 +125,29 @@ validaciones:
 #   fecha_atencion_activo: true  # true = aplicar filtro de fecha de atención, false = no aplicar
 #   modo_filtrado: "todos"  # "todos" = pacientes con TODOS los códigos requeridos
 
-# Filtro de valoración clínica sin factores de riesgo
-filtro_valoracion_clinica:
-  activo: true  # true = aplicar filtro de valoración clínica, false = no aplicar
+# # Filtro de valoración clínica sin factores de riesgo
+# filtro_valoracion_clinica:
+#   activo: true  # true = aplicar filtro de valoración clínica, false = no aplicar
+#   codigos_requeridos:  # Códigos que DEBEN estar presentes para este filtro
+#     - "Z019"
+#     - "Z006"
+#   valor_lab_especifico: ["IMC"]  # Valores específicos de laboratorio 
+#   fecha_atencion_activo: true  # true = aplicar filtro de fecha de atención, false = no aplicar
+#   modo_filtrado: "todos"  # "todos" = pacientes con TODOS los códigos requeridos
+
+
+# Filtro de valoración clínica con factores de riesgo
+filtro_valoracion_clinica_con_riesgo:
+  activo: true  # true = aplicar filtro de valoración clínica con riesgo, false = no aplicar
   codigos_requeridos:  # Códigos que DEBEN estar presentes para este filtro
     - "Z019"
-    - "Z006"
-  valor_lab_especifico: ["IMC"]  # Valores específicos de laboratorio (N o A)
+  codigos_factores_riesgo:  # Códigos de factores de riesgo (al menos uno debe estar presente)
+    - "E65X"
+    - "E669"
+    - "E6691"
+    - "E6692"
+    - "E6693"
+    - "E6690"
+  valor_lab_especifico: ["IMC"]  # Valores específicos de laboratorio
   fecha_atencion_activo: true  # true = aplicar filtro de fecha de atención, false = no aplicar
   modo_filtrado: "todos"  # "todos" = pacientes con TODOS los códigos requeridos
