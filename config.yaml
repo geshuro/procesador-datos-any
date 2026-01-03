@@ -109,6 +109,17 @@ validaciones:
 # filtrado_codigos:
 #   modo: "todos"
 
+# # Presión arterial Julio Diciembre 2025
+# filtro_especifico:
+#   activo: true  # true = aplicar filtro específico, false = no aplicar
+#   tipo_diagnostico: ["D", "R"]  # Puede ser D o R
+#   codigo_item_especifico: "99199.22"  # Código específico a filtrar
+#   tipo_presion_arterial_activo: true  # true = aplicar filtro específico, false = no aplicar
+#   tipo_presion_arterial: ["S", "D"]  # Puede ser S (Sistólica) o D (Diastólica)
+#   fecha_atencion_rango: ["2025-07-01", "2025-12-31"]  # Rango de fechas de atención
+# filtrado_codigos:
+#   modo: "todos"
+
 # # Filtro de códigos con clasificación de perímetro abdominal
 # filtro_perimetro:
 #   activo: true  # true = aplicar filtro de perímetro, false = no aplicar
@@ -181,20 +192,28 @@ validaciones:
 #   fecha_atencion_activo: true  # true = aplicar filtro de fecha de atención, false = no aplicar
 #   modo_filtrado: "todos"  # "todos" = pacientes con TODOS los códigos requeridos  
 
-# Filtro de Consejeria estilo de vida
-filtro_valoracion_clinica_con_riesgo:
-  activo: true  # true = aplicar filtro de valoración clínica con riesgo, false = no aplicar
-  codigos_requeridos:  # Códigos que DEBEN estar presentes para este filtro
-    - "99401.13"
-    - "Z019"
-  codigos_factores_riesgo:  # Códigos de factores de riesgo (al menos uno debe estar presente)
-    - "E669"
-    - "E6691"
-    - "E6692"
-    - "E6693"
-    - "E6690"
-    - "E785"
-    - "Z006"
-  valor_lab_especifico: ["IMC"]  # Valores específicos de laboratorio
-  fecha_atencion_activo: true  # true = aplicar filtro de fecha de atención, false = no aplicar
-  modo_filtrado: "todos"  # "todos" = pacientes con TODOS los códigos requeridos
+# # Filtro de Consejeria estilo de vida
+# filtro_valoracion_clinica_con_riesgo:
+#   activo: true  # true = aplicar filtro de valoración clínica con riesgo, false = no aplicar
+#   codigos_requeridos:  # Códigos que DEBEN estar presentes para este filtro
+#     - "99401.13"
+#     - "Z019"
+#   codigos_factores_riesgo:  # Códigos de factores de riesgo (al menos uno debe estar presente)
+#     - "E669"
+#     - "E6691"
+#     - "E6692"
+#     - "E6693"
+#     - "E6690"
+#     - "E785"
+#     - "Z006"
+#   valor_lab_especifico: ["IMC"]  # Valores específicos de laboratorio
+#   fecha_atencion_activo: true  # true = aplicar filtro de fecha de atención, false = no aplicar
+#   modo_filtrado: "todos"  # "todos" = pacientes con TODOS los códigos requeridos
+
+# #Filtro de riesgo cardiovascular
+# filtro_especifico:
+#   activo: true  # true = aplicar filtro específico, false = no aplicar
+#   tipo_diagnostico: ["D"]  # Puede ser D
+#   codigo_item_especifico: "99199.23"  # Código específico a filtrar
+# filtrado_codigos:
+#   modo: "todos"
