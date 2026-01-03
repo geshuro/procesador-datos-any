@@ -180,9 +180,6 @@ $RECYCLE.BIN/
 .nfs*
 
 # Data files (medical data should not be tracked)
-*.xlsx
-*.xls
-*.csv
 *.tsv
 *.json
 *.xml

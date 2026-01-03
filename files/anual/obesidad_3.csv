@@ -1,0 +1,5 @@
+Numero_Documento_Paciente,Genero,Edad_Reg,Codigo_Item,Tipo_Diagnostico,Valor_Lab,Id_Correlativo,Perimetro_Abdominal,Fecha_Atencion,Nombre_Establecimiento
+45686672,F,50,Z019,D,DNT,1,116.0,2025-02-09,TAMBOS
+45686672,F,50,E6693,D,IMC,3,116.0,2025-02-09,TAMBOS
+73318837,F,24,Z019,D,DNT,4,118.0,2025-03-13,YAPACMARCA
+73318837,F,24,E6693,D,IMC,5,118.0,2025-03-13,YAPACMARCA
