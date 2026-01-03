@@ -109,14 +109,14 @@ validaciones:
 # filtrado_codigos:
 #   modo: "todos"
 
-# # Presión arterial Julio Diciembre 2025
+# # Presión arterial Octube Diciembre 2025
 # filtro_especifico:
 #   activo: true  # true = aplicar filtro específico, false = no aplicar
 #   tipo_diagnostico: ["D", "R"]  # Puede ser D o R
 #   codigo_item_especifico: "99199.22"  # Código específico a filtrar
 #   tipo_presion_arterial_activo: true  # true = aplicar filtro específico, false = no aplicar
 #   tipo_presion_arterial: ["S", "D"]  # Puede ser S (Sistólica) o D (Diastólica)
-#   fecha_atencion_rango: ["2025-07-01", "2025-12-31"]  # Rango de fechas de atención
+#   fecha_atencion_rango: ["2025-10-01", "2025-12-31"]  # Rango de fechas de atención
 # filtrado_codigos:
 #   modo: "todos"
 
